@@ -8,3 +8,4 @@ data/debug/
 credentials/
 .pytest_cache/
 .venv/
+.github/workflows/daily-run.yml
