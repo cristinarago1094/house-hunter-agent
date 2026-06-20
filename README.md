@@ -134,13 +134,23 @@ GMAIL_TOKEN_JSON={...contenuto di credentials/token.json...}
 DATABASE_PATH=/var/data/house_hunter.db
 ```
 
+Per non perdere preferiti, feedback e storico annunci, su Render deve esistere anche un disco persistente:
+
+```text
+Name: house-hunter-data
+Mount path: /var/data
+Size: 1 GB
+```
+
+Senza disco persistente, Render puo svuotare il database a ogni deploy o riavvio.
+
 Se il template approvato non ha variabili, imposta:
 
 ```text
 META_WHATSAPP_DAILY_TEMPLATE_PARAM_COUNT=0
 ```
 
-In quel caso l'app invia prima il template fisso e subito dopo il riepilogo dettagliato come messaggio testuale.
+In quel caso l'app invia il template fisso. Per il riepilogo dinamico dettagliato usa `META_WHATSAPP_DAILY_USE_TEMPLATE=false`.
 
 Su Render usa:
 

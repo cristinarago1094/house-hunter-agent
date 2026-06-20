@@ -4,9 +4,15 @@ services:
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
+    disk:
+      name: house-hunter-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: HOUSE_HUNTER_WHATSAPP_ENABLED
         value: "true"
+      - key: DATABASE_PATH
+        value: /var/data/house_hunter.db
       - key: META_WHATSAPP_API_VERSION
         value: v23.0
       - key: META_WHATSAPP_DAILY_TEMPLATE_NAME

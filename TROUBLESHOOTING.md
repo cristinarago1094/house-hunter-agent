@@ -62,7 +62,22 @@ HOUSE_HUNTER_WHATSAPP_TO=+393331234567
 
 Su Render, se si usa il piano gratuito senza disco persistente, il database SQLite locale puo sparire ai riavvii.
 
-Per produzione stabile servira uno di questi:
+Sintomo tipico:
+
+- WhatsApp risponde `Non hai ancora annunci salvati nei preferiti dell'agente.`
+- la pagina `/favorites` torna vuota dopo deploy, riavvio o sleep del servizio.
+
+Soluzione consigliata per questo MVP:
+
+```text
+DATABASE_PATH=/var/data/house_hunter.db
+Render persistent disk:
+- name: house-hunter-data
+- mount path: /var/data
+- size: 1 GB
+```
+
+Per produzione stabile serve uno di questi:
 
 - disco persistente Render;
 - database esterno;
