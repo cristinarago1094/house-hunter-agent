@@ -98,6 +98,28 @@ https://www.immobiliare.it/annunci/555555/
 
         self.assertEqual(listing["size_sqm"], 72)
 
+    def test_does_not_use_greeting_as_title(self):
+        email = {
+            "id": "gmail-casa-greeting",
+            "source": "casa.it",
+            "subject": "Nuovo annuncio Casa.it",
+            "received_at": "2026-06-18T09:00:00",
+            "body": """
+Ciao,
+Trilocale in Vendita in Via Carlo Mirabello a Roma
+Roma Prati
+€ 425.000
+93 mq
+3 locali
+https://www.casa.it/immobili/54156696/
+""",
+        }
+
+        listing = parse_listing_email(email)
+
+        self.assertEqual(listing["title"], "Trilocale in Vendita in Via Carlo Mirabello a Roma")
+        self.assertNotEqual(listing["title"], "Ciao,")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,7 +25,7 @@ def parse_listing_email(email):
     size = _parse_int(_first_group(SIZE_PATTERN, text))
     rooms = _parse_int(_first_group(ROOMS_PATTERN, text))
 
-    title = lines[0] if lines else email.get("subject", "Annuncio immobiliare")
+    title = _find_title(lines, email.get("subject", "Annuncio immobiliare"))
     area = _find_area(lines)
 
     return {
@@ -64,6 +64,24 @@ def _find_area(lines):
         if "prati" in lower:
             return line
     return "Roma Prati"
+
+
+def _find_title(lines, fallback):
+    for line in lines:
+        if _is_boilerplate_line(line):
+            continue
+        return line
+    return fallback
+
+
+def _is_boilerplate_line(line):
+    normalized = line.strip().lower().strip(".,! ")
+    return normalized in {
+        "ciao",
+        "buongiorno",
+        "salve",
+        "gentile cliente",
+    }
 
 
 def _source_listing_id(url):

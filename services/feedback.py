@@ -114,7 +114,11 @@ def apply_feedback_command(connection, command_text):
             f"{listing['url']}"
         )
     if command["action"] == "favorite":
-        return f"Salvato tra i preferiti: {listing['title']}"
+        return (
+            f"Salvato nei preferiti dell'agente: {listing['title']}\n"
+            "Nota: lo salvo nel database di House Hunter Agent, non su casa.it "
+            "o immobiliare.it."
+        )
     if command["action"] == "discard":
         return f"Scartato: {listing['title']}"
 
@@ -137,11 +141,19 @@ def build_agency_contact_draft(listing):
     if detail_text:
         detail_text = f" ({detail_text})"
 
+    listing_reference = _listing_reference(listing)
     return (
-        "Buongiorno, sono interessata all'immobile "
-        f"'{listing['title']}'{detail_text}. "
+        "Buongiorno, sono interessata a "
+        f"{listing_reference}{detail_text}. "
         "Vorrei sapere se e ancora disponibile e se fosse possibile organizzare "
         "una visita nei prossimi giorni.\n\n"
         f"Link annuncio: {listing['url']}\n\n"
         "Grazie, resto in attesa di un gentile riscontro."
     )
+
+
+def _listing_reference(listing):
+    title = str(listing.get("title", "")).strip()
+    if title.lower().strip(".,! ") in {"ciao", "buongiorno", "salve"}:
+        return "questo immobile"
+    return f"questo immobile: '{title}'"

@@ -227,6 +227,34 @@ class FeedbackTest(unittest.TestCase):
 
         self.assertEqual([listing["title"] for listing in listings], ["Listing 2", "Listing 1"])
 
+    def test_favorite_reply_explains_local_agent_storage(self):
+        connection = connect(":memory:")
+        listing_id = upsert_listing(
+            connection,
+            {
+                "source": "casa.it",
+                "source_listing_id": "1",
+                "title": "Trilocale in Via Mirabello",
+                "area": "Roma Prati",
+                "price_eur": 425000,
+                "size_sqm": 93,
+                "rooms": 3,
+                "url": "https://www.casa.it/immobili/1/",
+                "score": 100,
+                "score_reasons": [],
+                "first_seen_at": "2026-06-18T09:00:00",
+                "last_seen_at": "2026-06-18T09:00:00",
+            },
+        )
+        record_recent_digest(connection, [listing_id])
+
+        from services.feedback import apply_feedback_command
+
+        response = apply_feedback_command(connection, "salva il primo")
+
+        self.assertIn("Salvato nei preferiti dell'agente", response)
+        self.assertIn("non su casa.it", response)
+
     def test_builds_agency_contact_draft(self):
         listing = {
             "title": "Bilocale in Via Germanico",
@@ -243,6 +271,21 @@ class FeedbackTest(unittest.TestCase):
         self.assertIn("Bilocale in Via Germanico", draft)
         self.assertIn("ancora disponibile", draft)
         self.assertIn("visita", draft)
+
+    def test_agency_contact_draft_does_not_use_greeting_title(self):
+        listing = {
+            "title": "Ciao,",
+            "area": "Roma Prati",
+            "price_eur": 425000,
+            "size_sqm": 93,
+            "rooms": 3,
+            "url": "https://www.casa.it/immobili/1/",
+        }
+
+        draft = build_agency_contact_draft(listing)
+
+        self.assertNotIn("'Ciao,'", draft)
+        self.assertIn("questo immobile", draft)
 
 
 if __name__ == "__main__":
