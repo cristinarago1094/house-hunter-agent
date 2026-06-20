@@ -9,6 +9,12 @@ ACTION_ALIASES = {
     "approfondisci": "details",
     "dettagli": "details",
     "dettaglio": "details",
+    "fammi vedere": "details",
+    "invia": "details",
+    "manda": "details",
+    "mandami": "details",
+    "mostra": "details",
+    "mostrami": "details",
     "scarta": "discard",
     "salva": "favorite",
     "preferito": "favorite",
@@ -53,10 +59,7 @@ def parse_feedback_command(text):
     if not action:
         raise ValueError("Non ho capito se vuoi contattare, salvare o scartare.")
 
-    if not item_number:
-        raise ValueError("Non ho capito a quale annuncio ti riferisci.")
-
-    if item_number < 1:
+    if item_number is not None and item_number < 1:
         raise ValueError("Il numero dell'annuncio deve essere almeno 1.")
 
     return {"action": action, "item_number": item_number}
@@ -80,6 +83,15 @@ def apply_feedback_command(connection, command_text):
     """Apply a feedback command to the latest listings shown to the user."""
     command = parse_feedback_command(command_text)
     listings = list_recent_listings(connection)
+    if command["item_number"] is None:
+        if len(listings) == 1:
+            command["item_number"] = 1
+        else:
+            raise ValueError(
+                "Quale annuncio intendi? Puoi scrivere, per esempio: "
+                "contatta il primo, salva il secondo, mandami il terzo."
+            )
+
     index = command["item_number"] - 1
 
     if index >= len(listings):
@@ -89,9 +101,12 @@ def apply_feedback_command(connection, command_text):
     add_feedback(connection, listing["id"], command["action"], command_text)
 
     if command["action"] == "contact_agency":
+        draft = build_agency_contact_draft(listing)
         return (
-            f"Ok, preparo il contatto per: {listing['title']}\n"
-            f"Link: {listing['url']}"
+            f"Ho preparato questa bozza per l'agenzia:\n\n"
+            f"{draft}\n\n"
+            "Per ora non la invio automaticamente. "
+            "Quando vuoi, copiala e inviala all'agenzia oppure scrivimi se vuoi modificarla."
         )
     if command["action"] == "details":
         return (
@@ -104,3 +119,29 @@ def apply_feedback_command(connection, command_text):
         return f"Scartato: {listing['title']}"
 
     return f"Feedback registrato: {listing['title']}"
+
+
+def build_agency_contact_draft(listing):
+    """Create a polite agency contact draft for one listing."""
+    details = []
+    if listing.get("area"):
+        details.append(str(listing["area"]))
+    if listing.get("price_eur"):
+        details.append(f"prezzo {listing['price_eur']:,} euro".replace(",", "."))
+    if listing.get("size_sqm"):
+        details.append(f"{listing['size_sqm']} mq")
+    if listing.get("rooms"):
+        details.append(f"{listing['rooms']} locali")
+
+    detail_text = ", ".join(details)
+    if detail_text:
+        detail_text = f" ({detail_text})"
+
+    return (
+        "Buongiorno, sono interessata all'immobile "
+        f"'{listing['title']}'{detail_text}. "
+        "Vorrei sapere se e ancora disponibile e se fosse possibile organizzare "
+        "una visita nei prossimi giorni.\n\n"
+        f"Link annuncio: {listing['url']}\n\n"
+        "Grazie, resto in attesa di un gentile riscontro."
+    )

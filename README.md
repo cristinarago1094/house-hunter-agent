@@ -180,4 +180,18 @@ Per automatizzarlo ogni giorno puoi usare un Render Cron Job o un servizio ester
 
 ## Sicurezza operativa
 
-L'agente non contatta agenzie e non fissa visite in autonomia. Quelle funzioni andranno aggiunte con conferma esplicita dell'utente prima di ogni azione esterna.
+L'agente non contatta agenzie e non fissa visite in autonomia.
+
+L'agente capisce risposte naturali come:
+
+```text
+salva il primo
+scarta il secondo
+mandami il terzo
+fammi vedere il primo
+contatta il primo
+```
+
+Se nel riepilogo c'e un solo annuncio, puoi scrivere anche solo `contatta`. Se ci sono piu annunci, l'agente ti chiede quale intendi.
+
+Quando chiedi di contattare un annuncio, prepara una bozza messaggio per l'agenzia e te la rimanda in WhatsApp. L'invio reale resta una tua decisione.

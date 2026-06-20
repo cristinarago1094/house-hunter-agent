@@ -35,13 +35,13 @@ class WhatsAppTest(unittest.TestCase):
 
         message = build_daily_digest(changes)
 
+        self.assertIn("Ho trovato 2 annunci", message)
         self.assertIn("NUOVO", message)
         self.assertIn("RIBASSO", message)
         self.assertIn("€450.000 -> €430.000", message)
-        self.assertIn("Vuoi che contatti l'agenzia", message)
-        self.assertIn("CONTATTA 1", message)
-        self.assertIn("SALVA 1", message)
-        self.assertIn("SCARTA 1", message)
+        self.assertIn("salva il primo", message)
+        self.assertIn("mandami il secondo", message)
+        self.assertIn("contatta il primo", message)
 
     def test_builds_empty_digest_without_contact_prompt(self):
         message = build_daily_digest([])

@@ -27,9 +27,12 @@ def build_daily_digest(changes):
     if not changes:
         return "Nessun nuovo annuncio o ribasso rilevante oggi su Roma Prati."
 
-    lines = ["Aggiornamento mercato acquisto - Roma Prati", ""]
+    visible_changes = changes[:MAX_DIGEST_ITEMS]
+    count = len(visible_changes)
+    plural = "annuncio" if count == 1 else "annunci"
+    lines = [f"Ho trovato {count} {plural} in linea con Roma Prati.", ""]
 
-    for change in changes[:MAX_DIGEST_ITEMS]:
+    for change in visible_changes:
         listing = change["listing"]
         prefix = "NUOVO" if change["type"] == "new" else "RIBASSO"
         item_number = len([line for line in lines if line.startswith(("NUOVO", "RIBASSO"))]) + 1
@@ -52,8 +55,8 @@ def build_daily_digest(changes):
         lines.append(listing["url"])
         lines.append("")
 
-    lines.append("Vuoi che contatti l'agenzia per uno di questi?")
-    lines.append("Rispondi con: CONTATTA 1, SALVA 1 oppure SCARTA 1.")
+    lines.append("Dimmi pure cosa vuoi fare.")
+    lines.append("Puoi scrivere: salva il primo, scarta il secondo, mandami il secondo, contatta il primo.")
     return "\n".join(lines).strip()
 
 
