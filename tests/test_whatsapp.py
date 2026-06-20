@@ -39,9 +39,10 @@ class WhatsAppTest(unittest.TestCase):
         self.assertIn("NUOVO", message)
         self.assertIn("RIBASSO", message)
         self.assertIn("€450.000 -> €430.000", message)
-        self.assertIn("salva il primo", message)
-        self.assertIn("mandami il secondo", message)
-        self.assertIn("contatta il primo", message)
+        self.assertIn("Dimmi pure cosa vuoi fare.", message)
+        self.assertNotIn("CONTATTA 1", message)
+        self.assertNotIn("SALVA 1", message)
+        self.assertNotIn("SCARTA 1", message)
 
     def test_builds_empty_digest_without_contact_prompt(self):
         message = build_daily_digest([])
@@ -60,7 +61,7 @@ class WhatsAppTest(unittest.TestCase):
     @patch("services.whatsapp.META_WHATSAPP_DAILY_TEMPLATE_PARAM_COUNT", 0)
     @patch("services.whatsapp._send_meta_text_message")
     @patch("services.whatsapp._send_meta_template_message")
-    def test_zero_param_template_sends_template_then_details(self, send_template, send_text):
+    def test_zero_param_template_sends_only_template(self, send_template, send_text):
         send_template.return_value = {"sent": True, "response": {"messages": []}}
         send_text.return_value = {"sent": True, "response": {"messages": []}}
 
@@ -72,7 +73,7 @@ class WhatsAppTest(unittest.TestCase):
             language_code="it",
             body_parameters=[],
         )
-        send_text.assert_called_once_with("RIBASSO 1 - Casa")
+        send_text.assert_not_called()
 
 
 if __name__ == "__main__":

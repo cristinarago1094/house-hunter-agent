@@ -56,7 +56,6 @@ def build_daily_digest(changes):
         lines.append("")
 
     lines.append("Dimmi pure cosa vuoi fare.")
-    lines.append("Puoi scrivere: salva il primo, scarta il secondo, mandami il secondo, contatta il primo.")
     return "\n".join(lines).strip()
 
 
@@ -81,13 +80,7 @@ def send_daily_house_hunter_template(message):
         if not template_result["sent"]:
             return template_result
 
-        detail_result = _send_meta_text_message(message)
-        return {
-            "sent": detail_result["sent"],
-            "template_result": template_result,
-            "detail_result": detail_result,
-            **({"reason": detail_result["reason"]} if not detail_result["sent"] else {}),
-        }
+        return template_result
 
     return _send_meta_template_message(
         template_name=META_WHATSAPP_DAILY_TEMPLATE_NAME,
