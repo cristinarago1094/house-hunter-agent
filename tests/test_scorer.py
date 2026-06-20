@@ -66,7 +66,7 @@ class ScorerTest(unittest.TestCase):
         self.assertFalse(scored["matches_preferences"])
         self.assertIn("piano terra", scored["disqualify_reasons"])
 
-    def test_rejects_low_floor_without_brightness_signal(self):
+    def test_rejects_low_floor_without_photo_verification(self):
         scored = score_listing(
             {
                 "title": "Trilocale al primo piano",
@@ -75,28 +75,28 @@ class ScorerTest(unittest.TestCase):
                 "size_sqm": 80,
                 "rooms": 3,
                 "floor_level": 1,
-                "description_text": "Trilocale in buono stato al primo piano",
             }
         )
 
         self.assertFalse(scored["matches_preferences"])
-        self.assertIn("piano basso da verificare con foto", scored["disqualify_reasons"])
+        self.assertIn("piano basso senza foto luminose verificate", scored["disqualify_reasons"])
 
-    def test_accepts_low_floor_with_brightness_signal(self):
+    def test_accepts_low_floor_with_bright_photo_verification(self):
         scored = score_listing(
             {
-                "title": "Trilocale luminoso al secondo piano",
+                "title": "Trilocale al secondo piano",
                 "area": "Roma Prati",
                 "price_eur": 430000,
                 "size_sqm": 80,
                 "rooms": 3,
                 "floor_level": 2,
-                "description_text": "Trilocale molto luminoso con doppia esposizione",
+                "photo_brightness_ok": True,
+                "photo_brightness_score": 180,
             }
         )
 
         self.assertTrue(scored["matches_preferences"])
-        self.assertIn("piano basso ma luminosità indicata", scored["score_reasons"])
+        self.assertIn("piano basso con foto luminose verificate", scored["score_reasons"])
 
 
 if __name__ == "__main__":

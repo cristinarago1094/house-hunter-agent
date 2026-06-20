@@ -9,22 +9,6 @@ from config import (
 )
 
 
-BRIGHTNESS_SIGNALS = {
-    "luminoso",
-    "luminosa",
-    "molto luminoso",
-    "molto luminosa",
-    "doppia esposizione",
-    "tripla esposizione",
-    "affaccio aperto",
-    "affacci aperti",
-    "balcone",
-    "balconi",
-    "terrazzo",
-    "terrazza",
-}
-
-
 def score_listing(listing):
     """Return a scored copy of one listing with human-readable reasons."""
     disqualify_reasons = preference_disqualify_reasons(listing)
@@ -70,7 +54,7 @@ def score_listing(listing):
         score += 10
         reasons.append("piano alto preferibile")
     elif floor_level in {1, 2}:
-        reasons.append("piano basso ma luminosità indicata")
+        reasons.append("piano basso con foto luminose verificate")
 
     scored = listing.copy()
     scored["score"] = min(score, 100)
@@ -100,18 +84,10 @@ def preference_disqualify_reasons(listing):
     floor_label = str(listing.get("floor_label", "")).lower()
     if floor_level == 0 or "piano terra" in floor_label:
         reasons.append("piano terra")
-    elif floor_level in {1, 2} and not has_brightness_signal(listing):
-        reasons.append("piano basso da verificare con foto")
+    elif floor_level in {1, 2} and not listing.get("photo_brightness_ok"):
+        reasons.append("piano basso senza foto luminose verificate")
 
     return reasons
-
-
-def has_brightness_signal(listing):
-    text = " ".join(
-        str(listing.get(key, ""))
-        for key in ["title", "area", "description_text"]
-    ).lower()
-    return any(signal in text for signal in BRIGHTNESS_SIGNALS)
 
 
 def score_listings(listings):

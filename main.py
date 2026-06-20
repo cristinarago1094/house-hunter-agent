@@ -24,6 +24,7 @@ from services.database import (
 from services.email_parser import clean_email_body, parse_listing_email
 from services.feedback import apply_feedback_command
 from services.gmail_client import fetch_alert_emails, fetch_sample_alert_emails
+from services.photo_verifier import verify_listing_photos
 from services.scorer import score_listing
 from services.whatsapp import (
     build_daily_digest,
@@ -40,7 +41,9 @@ def run_daily_import(use_sample_data=False):
     relevant_changes = []
 
     for email in emails:
-        listing = score_listing(parse_listing_email(email))
+        parsed_listing = parse_listing_email(email)
+        verified_listing = verify_listing_photos(parsed_listing)
+        listing = score_listing(verified_listing)
         existing = find_listing(
             connection,
             listing["source"],
