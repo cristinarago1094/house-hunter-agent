@@ -1,4 +1,4 @@
-"""Verify brightness for low-floor listings using the main listing photo."""
+"""Verify brightness for low-floor listings using listing photos."""
 
 import io
 import re
@@ -8,6 +8,7 @@ import requests
 
 
 BRIGHTNESS_THRESHOLD = 115
+MAX_IMAGES_TO_CHECK = 6
 
 
 def is_low_floor_listing(listing):
@@ -16,7 +17,7 @@ def is_low_floor_listing(listing):
 
 
 def verify_listing_photos(listing, http_get=requests.get):
-    """Fetch the main listing photo and mark whether it looks bright enough."""
+    """Fetch listing photos and mark whether at least one looks bright enough."""
     verified = listing.copy()
     if not is_low_floor_listing(listing):
         verified["photo_verification_status"] = "not_required"
@@ -30,28 +31,41 @@ def verify_listing_photos(listing, http_get=requests.get):
             timeout=20,
         )
         page.raise_for_status()
-        image_url = extract_primary_image_url(page.text)
-        if not image_url:
+        image_urls = extract_listing_image_urls(page.text)
+        if not image_urls:
             verified["photo_verification_status"] = "no_image"
             verified["photo_brightness_ok"] = False
             return verified
 
-        image_response = http_get(
-            image_url,
-            headers={"User-Agent": "HouseHunterAgent/1.0"},
-            timeout=20,
-        )
-        image_response.raise_for_status()
-        brightness = image_brightness(image_response.content)
+        scores = []
+        checked_urls = []
+        for image_url in image_urls[:MAX_IMAGES_TO_CHECK]:
+            image_response = http_get(
+                image_url,
+                headers={"User-Agent": "HouseHunterAgent/1.0"},
+                timeout=20,
+            )
+            image_response.raise_for_status()
+            scores.append(image_brightness(image_response.content))
+            checked_urls.append(image_url)
     except Exception as error:
         verified["photo_verification_status"] = "error"
         verified["photo_verification_error"] = str(error)
         verified["photo_brightness_ok"] = False
         return verified
 
-    verified["photo_image_url"] = image_url
-    verified["photo_brightness_score"] = round(brightness, 1)
-    if brightness >= BRIGHTNESS_THRESHOLD:
+    if not scores:
+        verified["photo_verification_status"] = "no_image"
+        verified["photo_brightness_ok"] = False
+        return verified
+
+    best_brightness = max(scores)
+    best_index = scores.index(best_brightness)
+    verified["photo_image_url"] = checked_urls[best_index]
+    verified["photo_checked_image_urls"] = checked_urls
+    verified["photo_verified_images"] = len(scores)
+    verified["photo_brightness_score"] = round(best_brightness, 1)
+    if best_brightness >= BRIGHTNESS_THRESHOLD:
         verified["photo_verification_status"] = "bright"
         verified["photo_brightness_ok"] = True
     else:
@@ -63,17 +77,34 @@ def verify_listing_photos(listing, http_get=requests.get):
 
 def extract_primary_image_url(html):
     """Extract the most likely primary image URL from listing HTML."""
+    urls = extract_listing_image_urls(html)
+    return urls[0] if urls else ""
+
+
+def extract_listing_image_urls(html):
+    """Extract likely listing image URLs from metadata and image tags."""
     patterns = [
         r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
         r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
         r'<meta[^>]+name=["\']twitter:image["\'][^>]+content=["\']([^"\']+)["\']',
         r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']twitter:image["\']',
+        r'<img[^>]+src=["\']([^"\']+)["\']',
     ]
+    urls = []
     for pattern in patterns:
-        match = re.search(pattern, html, flags=re.IGNORECASE)
-        if match:
-            return match.group(1)
-    return ""
+        for match in re.finditer(pattern, html, flags=re.IGNORECASE):
+            url = match.group(1)
+            if _looks_like_image_url(url) and url not in urls:
+                urls.append(url)
+    return urls
+
+
+def _looks_like_image_url(url):
+    lower = url.lower()
+    return lower.startswith("http") and any(
+        extension in lower
+        for extension in [".jpg", ".jpeg", ".png", ".webp"]
+    )
 
 
 def image_brightness(image_bytes):
