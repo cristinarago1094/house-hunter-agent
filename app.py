@@ -66,8 +66,8 @@ def handle_inbound_whatsapp_message(from_number, text):
     except ValueError as error:
         reply_text = (
             f"Non ho capito bene: {error}\n"
-            "Puoi scrivere, per esempio: salva il primo, scarta il secondo, "
-            "approfondisci il primo, contatta il primo."
+            "Dimmi con parole tue se vuoi salvare, scartare, approfondire "
+            "o contattare l'agenzia per un annuncio."
         )
 
     send_result = send_whatsapp_message_to(from_number, reply_text)

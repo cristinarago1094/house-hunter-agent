@@ -60,6 +60,14 @@ def initialize(connection):
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(listing_id) REFERENCES listings(id)
         );
+
+        CREATE TABLE IF NOT EXISTS recent_digest_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            listing_id INTEGER NOT NULL,
+            item_number INTEGER NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(listing_id) REFERENCES listings(id)
+        );
         """
     )
     connection.commit()
@@ -176,6 +184,35 @@ def list_recent_listings(connection, limit=8):
         """
         SELECT * FROM listings
         ORDER BY score DESC, last_seen_at DESC, id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def record_recent_digest(connection, listing_ids):
+    """Remember the exact listing order shown in the latest WhatsApp digest."""
+    connection.execute("DELETE FROM recent_digest_items")
+    for item_number, listing_id in enumerate(listing_ids, start=1):
+        connection.execute(
+            """
+            INSERT INTO recent_digest_items (listing_id, item_number)
+            VALUES (?, ?)
+            """,
+            (listing_id, item_number),
+        )
+    connection.commit()
+
+
+def list_recent_digest_listings(connection, limit=8):
+    """Return listings in the exact order used by the latest WhatsApp digest."""
+    rows = connection.execute(
+        """
+        SELECT listings.*
+        FROM recent_digest_items
+        JOIN listings ON listings.id = recent_digest_items.listing_id
+        ORDER BY recent_digest_items.item_number ASC
         LIMIT ?
         """,
         (limit,),

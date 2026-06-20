@@ -2,7 +2,7 @@
 
 import re
 
-from services.database import add_feedback, list_recent_listings
+from services.database import add_feedback, list_recent_digest_listings, list_recent_listings
 
 
 ACTION_ALIASES = {
@@ -82,7 +82,7 @@ def _find_item_number(text):
 def apply_feedback_command(connection, command_text):
     """Apply a feedback command to the latest listings shown to the user."""
     command = parse_feedback_command(command_text)
-    listings = list_recent_listings(connection)
+    listings = list_recent_digest_listings(connection) or list_recent_listings(connection)
     if command["item_number"] is None:
         if len(listings) == 1:
             command["item_number"] = 1

@@ -8,12 +8,19 @@ from config import (
     ENV_FILE_PATH,
     META_WHATSAPP_ACCESS_TOKEN,
     META_WHATSAPP_PHONE_NUMBER_ID,
+    MAX_DIGEST_ITEMS,
     NOTIFY_WHEN_NO_CHANGES,
     WHATSAPP_ENABLED,
     WHATSAPP_TO_NUMBER,
 )
 from services.change_detector import detect_change
-from services.database import connect, find_listing, reset_database, upsert_listing
+from services.database import (
+    connect,
+    find_listing,
+    record_recent_digest,
+    reset_database,
+    upsert_listing,
+)
 from services.email_parser import clean_email_body, parse_listing_email
 from services.feedback import apply_feedback_command
 from services.gmail_client import fetch_alert_emails, fetch_sample_alert_emails
@@ -51,6 +58,17 @@ def run_daily_import(use_sample_data=False):
         reverse=True,
     )
     message = build_daily_digest(relevant_changes)
+    record_recent_digest(
+        connection,
+        [
+            find_listing(
+                connection,
+                change["listing"]["source"],
+                change["listing"]["source_listing_id"],
+            )["id"]
+            for change in relevant_changes[:MAX_DIGEST_ITEMS]
+        ],
+    )
     if relevant_changes or NOTIFY_WHEN_NO_CHANGES:
         send_result = send_daily_house_hunter_template(message)
     else:
