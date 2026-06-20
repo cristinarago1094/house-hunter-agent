@@ -218,3 +218,20 @@ def list_recent_digest_listings(connection, limit=8):
         (limit,),
     ).fetchall()
     return [dict(row) for row in rows]
+
+
+def list_favorite_listings(connection, limit=50):
+    """Return listings saved as favorites in the agent's local database."""
+    rows = connection.execute(
+        """
+        SELECT listings.*, MAX(feedback.created_at) AS saved_at
+        FROM feedback
+        JOIN listings ON listings.id = feedback.listing_id
+        WHERE feedback.feedback_text LIKE 'favorite:%'
+        GROUP BY listings.id
+        ORDER BY saved_at DESC, listings.score DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    return [dict(row) for row in rows]

@@ -2,7 +2,12 @@
 
 import re
 
-from services.database import add_feedback, list_recent_digest_listings, list_recent_listings
+from services.database import (
+    add_feedback,
+    list_favorite_listings,
+    list_recent_digest_listings,
+    list_recent_listings,
+)
 
 
 ACTION_ALIASES = {
@@ -20,6 +25,17 @@ ACTION_ALIASES = {
     "preferito": "favorite",
     "preferiti": "favorite",
     "contatta": "contact_agency",
+}
+
+LIST_FAVORITES_PHRASES = {
+    "mostra salvati",
+    "mostrami salvati",
+    "vedi salvati",
+    "lista salvati",
+    "mostra preferiti",
+    "vedi preferiti",
+    "lista preferiti",
+    "preferiti salvati",
 }
 
 NUMBER_WORDS = {
@@ -53,6 +69,9 @@ NUMBER_WORDS = {
 def parse_feedback_command(text):
     """Parse commands such as 'SCARTA 1', 'SALVA 2', or 'CONTATTA 1'."""
     normalized = text.strip().lower()
+    if _is_list_favorites_command(normalized):
+        return {"action": "list_favorites", "item_number": None}
+
     action = _find_action(normalized)
     item_number = _find_item_number(normalized)
 
@@ -72,6 +91,11 @@ def _find_action(text):
     return None
 
 
+def _is_list_favorites_command(text):
+    normalized = re.sub(r"\s+", " ", text).strip(" .,!").lower()
+    return normalized in LIST_FAVORITES_PHRASES
+
+
 def _find_item_number(text):
     for token in re.findall(r"[\w']+", text):
         if token in NUMBER_WORDS:
@@ -82,6 +106,9 @@ def _find_item_number(text):
 def apply_feedback_command(connection, command_text):
     """Apply a feedback command to the latest listings shown to the user."""
     command = parse_feedback_command(command_text)
+    if command["action"] == "list_favorites":
+        return build_favorites_message(list_favorite_listings(connection))
+
     listings = list_recent_digest_listings(connection) or list_recent_listings(connection)
     if command["item_number"] is None:
         if len(listings) == 1:
@@ -123,6 +150,30 @@ def apply_feedback_command(connection, command_text):
         return f"Scartato: {listing['title']}"
 
     return f"Feedback registrato: {listing['title']}"
+
+
+def build_favorites_message(listings):
+    """Build a compact WhatsApp message with saved favorite listings."""
+    if not listings:
+        return "Non hai ancora annunci salvati nei preferiti dell'agente."
+
+    lines = ["Preferiti salvati nell'agente:"]
+    for index, listing in enumerate(listings, start=1):
+        details = []
+        if listing.get("price_eur"):
+            details.append(f"€{listing['price_eur']:,.0f}".replace(",", "."))
+        if listing.get("size_sqm"):
+            details.append(f"{listing['size_sqm']} mq")
+        if listing.get("rooms"):
+            details.append(f"{listing['rooms']} locali")
+
+        lines.append("")
+        lines.append(f"{index}. {listing['title']}")
+        if details:
+            lines.append(" | ".join(details))
+        lines.append(listing["url"])
+
+    return "\n".join(lines)
 
 
 def build_agency_contact_draft(listing):

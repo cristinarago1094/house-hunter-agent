@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import patch
 
 from app import app
+from services.database import add_feedback, connect, upsert_listing
 
 
 class WebAppTest(unittest.TestCase):
@@ -78,6 +79,38 @@ class WebAppTest(unittest.TestCase):
         self.assertIn("Non ho capito bene", reply)
         self.assertNotIn("salva il primo", reply)
         self.assertNotIn("contatta il primo", reply)
+
+    @patch("app.connect")
+    def test_favorites_page_lists_saved_items(self, connect_mock):
+        connection = connect(":memory:")
+        listing_id = upsert_listing(
+            connection,
+            {
+                "source": "casa.it",
+                "source_listing_id": "1",
+                "title": "Trilocale in Via Mirabello",
+                "area": "Roma Prati",
+                "price_eur": 425000,
+                "size_sqm": 93,
+                "rooms": 3,
+                "url": "https://www.casa.it/immobili/1/",
+                "score": 100,
+                "score_reasons": [],
+                "first_seen_at": "2026-06-18T09:00:00",
+                "last_seen_at": "2026-06-18T09:00:00",
+            },
+        )
+        add_feedback(connection, listing_id, "favorite", "salva il primo")
+        connect_mock.return_value = connection
+        client = app.test_client()
+
+        response = client.get("/favorites")
+        html = response.get_data(as_text=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Preferiti House Hunter Agent", html)
+        self.assertIn("Trilocale in Via Mirabello", html)
+        self.assertIn("https://www.casa.it/immobili/1/", html)
 
 
 if __name__ == "__main__":

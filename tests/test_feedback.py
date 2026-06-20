@@ -1,7 +1,9 @@
 import unittest
 
 from services.database import (
+    add_feedback,
     connect,
+    list_favorite_listings,
     list_recent_digest_listings,
     list_recent_listings,
     record_recent_digest,
@@ -254,6 +256,78 @@ class FeedbackTest(unittest.TestCase):
 
         self.assertIn("Salvato nei preferiti dell'agente", response)
         self.assertIn("non su casa.it", response)
+
+    def test_show_saved_returns_favorite_list(self):
+        connection = connect(":memory:")
+        listing_id = upsert_listing(
+            connection,
+            {
+                "source": "casa.it",
+                "source_listing_id": "1",
+                "title": "Trilocale in Via Mirabello",
+                "area": "Roma Prati",
+                "price_eur": 425000,
+                "size_sqm": 93,
+                "rooms": 3,
+                "url": "https://www.casa.it/immobili/1/",
+                "score": 100,
+                "score_reasons": [],
+                "first_seen_at": "2026-06-18T09:00:00",
+                "last_seen_at": "2026-06-18T09:00:00",
+            },
+        )
+        add_feedback(connection, listing_id, "favorite", "salva il primo")
+
+        from services.feedback import apply_feedback_command
+
+        response = apply_feedback_command(connection, "mostra salvati")
+
+        self.assertIn("Preferiti salvati", response)
+        self.assertIn("Trilocale in Via Mirabello", response)
+        self.assertIn("https://www.casa.it/immobili/1/", response)
+
+    def test_list_favorite_listings_returns_saved_items(self):
+        connection = connect(":memory:")
+        saved_id = upsert_listing(
+            connection,
+            {
+                "source": "immobiliare.it",
+                "source_listing_id": "1",
+                "title": "Saved listing",
+                "area": "Roma Prati",
+                "price_eur": 420000,
+                "size_sqm": 72,
+                "rooms": 2,
+                "url": "https://www.immobiliare.it/annunci/1/",
+                "score": 90,
+                "score_reasons": [],
+                "first_seen_at": "2026-06-18T09:00:00",
+                "last_seen_at": "2026-06-18T09:00:00",
+            },
+        )
+        upsert_listing(
+            connection,
+            {
+                "source": "casa.it",
+                "source_listing_id": "2",
+                "title": "Unsaved listing",
+                "area": "Roma Prati",
+                "price_eur": 450000,
+                "size_sqm": 80,
+                "rooms": 3,
+                "url": "https://www.casa.it/immobili/2/",
+                "score": 85,
+                "score_reasons": [],
+                "first_seen_at": "2026-06-18T09:00:00",
+                "last_seen_at": "2026-06-18T09:00:00",
+            },
+        )
+        add_feedback(connection, saved_id, "favorite", "salva il primo")
+
+        favorites = list_favorite_listings(connection)
+
+        self.assertEqual(len(favorites), 1)
+        self.assertEqual(favorites[0]["title"], "Saved listing")
 
     def test_builds_agency_contact_draft(self):
         listing = {
