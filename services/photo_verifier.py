@@ -2,13 +2,45 @@
 
 import io
 import re
+from html import unescape
 
 from PIL import Image, ImageStat
 import requests
 
+from services.email_parser import find_floor
+
 
 BRIGHTNESS_THRESHOLD = 115
 MAX_IMAGES_TO_CHECK = 6
+
+
+def enrich_listing_from_page(listing, http_get=requests.get):
+    """Add useful page metadata, such as floor text, before scoring."""
+    enriched = listing.copy()
+    try:
+        page = http_get(
+            listing["url"],
+            headers={"User-Agent": "HouseHunterAgent/1.0"},
+            timeout=20,
+        )
+        page.raise_for_status()
+    except Exception as error:
+        enriched["page_enrichment_status"] = "error"
+        enriched["page_enrichment_error"] = str(error)
+        return enriched
+
+    page_text = extract_page_description_text(page.text)
+    if page_text:
+        current_text = str(enriched.get("description_text", ""))
+        enriched["description_text"] = f"{current_text}\n{page_text}".strip()
+
+    if enriched.get("floor_level") is None and page_text:
+        floor_level, floor_label = find_floor(page_text)
+        enriched["floor_level"] = floor_level
+        enriched["floor_label"] = floor_label
+
+    enriched["page_enrichment_status"] = "ok"
+    return enriched
 
 
 def is_low_floor_listing(listing):
@@ -97,6 +129,23 @@ def extract_listing_image_urls(html):
             if _looks_like_image_url(url) and url not in urls:
                 urls.append(url)
     return urls
+
+
+def extract_page_description_text(html):
+    """Extract compact listing text from meta description tags."""
+    patterns = [
+        r'<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:description["\']',
+        r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)["\']',
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']description["\']',
+    ]
+    parts = []
+    for pattern in patterns:
+        for match in re.finditer(pattern, html, flags=re.IGNORECASE):
+            text = unescape(match.group(1)).strip()
+            if text and text not in parts:
+                parts.append(text)
+    return "\n".join(parts)
 
 
 def _looks_like_image_url(url):

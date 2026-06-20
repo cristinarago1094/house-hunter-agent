@@ -24,7 +24,7 @@ from services.database import (
 from services.email_parser import clean_email_body, parse_listing_email
 from services.feedback import apply_feedback_command
 from services.gmail_client import fetch_alert_emails, fetch_sample_alert_emails
-from services.photo_verifier import verify_listing_photos
+from services.photo_verifier import enrich_listing_from_page, verify_listing_photos
 from services.scorer import score_listing
 from services.whatsapp import (
     build_daily_digest,
@@ -39,10 +39,12 @@ def run_daily_import(use_sample_data=False):
     emails = fetch_sample_alert_emails() if use_sample_data else fetch_alert_emails()
     connection = connect(DATABASE_PATH)
     relevant_changes = []
+    relevant_listing_ids = []
 
     for email in emails:
         parsed_listing = parse_listing_email(email)
-        verified_listing = verify_listing_photos(parsed_listing)
+        enriched_listing = enrich_listing_from_page(parsed_listing)
+        verified_listing = verify_listing_photos(enriched_listing)
         listing = score_listing(verified_listing)
         existing = find_listing(
             connection,
@@ -50,10 +52,11 @@ def run_daily_import(use_sample_data=False):
             listing["source_listing_id"],
         )
         change = detect_change(listing, existing)
-        upsert_listing(connection, listing)
+        listing_id = upsert_listing(connection, listing)
 
         if change["type"] in {"new", "price_drop"} and listing.get("matches_preferences"):
             relevant_changes.append(change)
+            relevant_listing_ids.append(listing_id)
 
     relevant_changes = sorted(
         relevant_changes,
@@ -63,14 +66,7 @@ def run_daily_import(use_sample_data=False):
     message = build_daily_digest(relevant_changes)
     record_recent_digest(
         connection,
-        [
-            find_listing(
-                connection,
-                change["listing"]["source"],
-                change["listing"]["source_listing_id"],
-            )["id"]
-            for change in relevant_changes[:MAX_DIGEST_ITEMS]
-        ],
+        relevant_listing_ids[:MAX_DIGEST_ITEMS],
     )
     if relevant_changes or NOTIFY_WHEN_NO_CHANGES:
         send_result = send_daily_house_hunter_template(message)

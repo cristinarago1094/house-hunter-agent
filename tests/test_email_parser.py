@@ -1,6 +1,6 @@
 import unittest
 
-from services.email_parser import parse_listing_email
+from services.email_parser import find_floor, parse_listing_email
 
 
 class EmailParserTest(unittest.TestCase):
@@ -119,6 +119,14 @@ https://www.casa.it/immobili/111111/
 
         self.assertEqual(listing["floor_level"], 0)
         self.assertEqual(listing["floor_label"], "piano terra")
+
+    def test_finds_ground_floor_inside_sentence(self):
+        floor_level, floor_label = find_floor(
+            "Trilocale posto al piano terra di uno stabile signorile."
+        )
+
+        self.assertEqual(floor_level, 0)
+        self.assertEqual(floor_label, "piano terra")
 
     def test_parses_numbered_floor(self):
         email = {

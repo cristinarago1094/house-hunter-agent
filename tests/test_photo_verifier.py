@@ -4,6 +4,7 @@ import unittest
 from PIL import Image
 
 from services.photo_verifier import (
+    enrich_listing_from_page,
     extract_listing_image_urls,
     extract_primary_image_url,
     is_low_floor_listing,
@@ -132,6 +133,26 @@ class PhotoVerifierTest(unittest.TestCase):
 
         self.assertFalse(verified["photo_brightness_ok"])
         self.assertEqual(verified["photo_verification_status"], "no_image")
+
+    def test_enriches_floor_from_listing_page_description(self):
+        listing = {
+            "url": "https://www.casa.it/immobili/1/",
+            "floor_level": None,
+            "description_text": "Trilocale in Via Carlo Mirabello",
+        }
+
+        def fake_get(url, **kwargs):
+            return FakeResponse(
+                text="""
+                <meta property="og:description" content="Trilocale posto al piano terra di uno stabile signorile.">
+                """
+            )
+
+        enriched = enrich_listing_from_page(listing, http_get=fake_get)
+
+        self.assertEqual(enriched["floor_level"], 0)
+        self.assertEqual(enriched["floor_label"], "piano terra")
+        self.assertIn("piano terra", enriched["description_text"])
 
 
 def _jpeg_with_brightness(value):

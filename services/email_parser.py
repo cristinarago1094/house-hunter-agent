@@ -41,7 +41,7 @@ def parse_listing_email(email):
 
     title = _find_title(lines, email.get("subject", "Annuncio immobiliare"))
     area = _find_area(lines)
-    floor_level, floor_label = _find_floor(text)
+    floor_level, floor_label = find_floor(text)
 
     return {
         "source": email["source"],
@@ -92,7 +92,8 @@ def _find_title(lines, fallback):
     return fallback
 
 
-def _find_floor(text):
+def find_floor(text):
+    """Find the floor level and label in listing text."""
     lower = text.lower()
     if re.search(r"\bpiano\s+terra\b|\bp\.?\s*terra\b|\bpianterreno\b", lower):
         return 0, "piano terra"
