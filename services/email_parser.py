@@ -76,12 +76,18 @@ def _find_title(lines, fallback):
 
 def _is_boilerplate_line(line):
     normalized = line.strip().lower().strip(".,! ")
-    return normalized in {
+    if normalized in {
         "ciao",
         "buongiorno",
         "salve",
         "gentile cliente",
-    }
+    }:
+        return True
+
+    return (
+        "ti suggeriamo nuovi annunci" in normalized
+        or "annunci simili a quelli che hai contattato" in normalized
+    )
 
 
 def _source_listing_id(url):

@@ -120,6 +120,27 @@ https://www.casa.it/immobili/54156696/
         self.assertEqual(listing["title"], "Trilocale in Vendita in Via Carlo Mirabello a Roma")
         self.assertNotEqual(listing["title"], "Ciao,")
 
+    def test_does_not_use_recommendation_sentence_as_title(self):
+        email = {
+            "id": "gmail-casa-recommendation",
+            "source": "casa.it",
+            "subject": "Nuovo annuncio Casa.it",
+            "received_at": "2026-06-18T09:00:00",
+            "body": """
+ti suggeriamo nuovi annunci simili a quelli che hai contattato o salvato tra i preferiti
+Quadrilocale in Vendita in Via Cunfida a Roma
+Roma Prati
+€ 450.000
+145 mq
+4 locali
+https://www.casa.it/immobili/53372301/
+""",
+        }
+
+        listing = parse_listing_email(email)
+
+        self.assertEqual(listing["title"], "Quadrilocale in Vendita in Via Cunfida a Roma")
+
 
 if __name__ == "__main__":
     unittest.main()

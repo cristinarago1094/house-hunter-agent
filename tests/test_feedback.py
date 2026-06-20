@@ -255,7 +255,8 @@ class FeedbackTest(unittest.TestCase):
         response = apply_feedback_command(connection, "salva il primo")
 
         self.assertIn("Salvato nei preferiti dell'agente", response)
-        self.assertIn("non su casa.it", response)
+        self.assertNotIn("Nota:", response)
+        self.assertNotIn("non su casa.it", response)
 
     def test_show_saved_returns_favorite_list(self):
         connection = connect(":memory:")

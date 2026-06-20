@@ -141,11 +141,7 @@ def apply_feedback_command(connection, command_text):
             f"{listing['url']}"
         )
     if command["action"] == "favorite":
-        return (
-            f"Salvato nei preferiti dell'agente: {listing['title']}\n"
-            "Nota: lo salvo nel database di House Hunter Agent, non su casa.it "
-            "o immobiliare.it."
-        )
+        return f"Salvato nei preferiti dell'agente: {listing['title']}"
     if command["action"] == "discard":
         return f"Scartato: {listing['title']}"
 
