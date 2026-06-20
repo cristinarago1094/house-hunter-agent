@@ -58,22 +58,17 @@ class WhatsAppTest(unittest.TestCase):
         self.assertNotIn("\t", text)
         self.assertNotIn("    ", text)
 
-    @patch("services.whatsapp.META_WHATSAPP_DAILY_TEMPLATE_PARAM_COUNT", 0)
     @patch("services.whatsapp._send_meta_text_message")
     @patch("services.whatsapp._send_meta_template_message")
-    def test_zero_param_template_sends_only_template(self, send_template, send_text):
+    def test_daily_update_sends_only_dynamic_text_by_default(self, send_template, send_text):
         send_template.return_value = {"sent": True, "response": {"messages": []}}
         send_text.return_value = {"sent": True, "response": {"messages": []}}
 
         result = send_daily_house_hunter_template("RIBASSO 1 - Casa")
 
         self.assertTrue(result["sent"])
-        send_template.assert_called_once_with(
-            template_name="daily_house_hunter_update",
-            language_code="it",
-            body_parameters=[],
-        )
-        send_text.assert_not_called()
+        send_text.assert_called_once_with("RIBASSO 1 - Casa")
+        send_template.assert_not_called()
 
 
 if __name__ == "__main__":
