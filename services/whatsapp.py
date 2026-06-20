@@ -1,5 +1,7 @@
 """WhatsApp digest builder and Meta Cloud API sender."""
 
+import re
+
 import requests
 
 from config import (
@@ -69,8 +71,16 @@ def send_daily_house_hunter_template(message):
     return _send_meta_template_message(
         template_name=META_WHATSAPP_DAILY_TEMPLATE_NAME,
         language_code=META_WHATSAPP_DAILY_TEMPLATE_LANGUAGE,
-        body_parameters=[message],
+        body_parameters=[template_parameter_text(message)],
     )
+
+
+def template_parameter_text(message):
+    """Make text safe for Meta template parameters."""
+    single_line = re.sub(r"[\n\t]+", " | ", message)
+    single_line = re.sub(r" {2,}", " ", single_line)
+    single_line = re.sub(r"( \| ){2,}", " | ", single_line)
+    return single_line.strip(" |")
 
 
 def _send_meta_text_message(message, to_number=None):

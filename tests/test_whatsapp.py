@@ -1,6 +1,6 @@
 import unittest
 
-from services.whatsapp import build_daily_digest
+from services.whatsapp import build_daily_digest, template_parameter_text
 
 
 class WhatsAppTest(unittest.TestCase):
@@ -47,6 +47,14 @@ class WhatsAppTest(unittest.TestCase):
 
         self.assertIn("Nessun nuovo annuncio", message)
         self.assertNotIn("CONTATTA", message)
+
+    def test_template_parameter_text_removes_disallowed_whitespace(self):
+        text = template_parameter_text("NUOVO 1\n\tBilocale    in Prati\n\nScore: 92")
+
+        self.assertEqual(text, "NUOVO 1 | Bilocale in Prati | Score: 92")
+        self.assertNotIn("\n", text)
+        self.assertNotIn("\t", text)
+        self.assertNotIn("    ", text)
 
 
 if __name__ == "__main__":
