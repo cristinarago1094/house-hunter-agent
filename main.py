@@ -49,7 +49,7 @@ def run_daily_import(use_sample_data=False):
         change = detect_change(listing, existing)
         upsert_listing(connection, listing)
 
-        if change["type"] in {"new", "price_drop"}:
+        if change["type"] in {"new", "price_drop"} and listing.get("matches_preferences"):
             relevant_changes.append(change)
 
     relevant_changes = sorted(

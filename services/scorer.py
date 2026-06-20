@@ -1,10 +1,41 @@
 """Transparent scoring rules for purchase listings in Roma Prati."""
 
-from config import IDEAL_PRICE_EUR, IDEAL_SIZE_SQM, MAX_PRICE_EUR, MIN_ROOMS, MIN_SIZE_SQM
+from config import (
+    IDEAL_PRICE_EUR,
+    IDEAL_SIZE_SQM,
+    MAX_PRICE_EUR,
+    MIN_SIZE_SQM,
+    REQUIRED_ROOMS,
+)
+
+
+BRIGHTNESS_SIGNALS = {
+    "luminoso",
+    "luminosa",
+    "molto luminoso",
+    "molto luminosa",
+    "doppia esposizione",
+    "tripla esposizione",
+    "affaccio aperto",
+    "affacci aperti",
+    "balcone",
+    "balconi",
+    "terrazzo",
+    "terrazza",
+}
 
 
 def score_listing(listing):
     """Return a scored copy of one listing with human-readable reasons."""
+    disqualify_reasons = preference_disqualify_reasons(listing)
+    if disqualify_reasons:
+        scored = listing.copy()
+        scored["score"] = 0
+        scored["score_reasons"] = []
+        scored["matches_preferences"] = False
+        scored["disqualify_reasons"] = disqualify_reasons
+        return scored
+
     score = 0
     reasons = []
 
@@ -30,14 +61,57 @@ def score_listing(listing):
         reasons.append("metratura accettabile")
 
     rooms = listing.get("rooms") or 0
-    if rooms >= MIN_ROOMS:
+    if rooms == REQUIRED_ROOMS:
         score += 20
-        reasons.append("numero locali coerente")
+        reasons.append("trilocale")
+
+    floor_level = listing.get("floor_level")
+    if floor_level and floor_level >= 3:
+        score += 10
+        reasons.append("piano alto preferibile")
+    elif floor_level in {1, 2}:
+        reasons.append("piano basso ma luminosità indicata")
 
     scored = listing.copy()
     scored["score"] = min(score, 100)
     scored["score_reasons"] = reasons
+    scored["matches_preferences"] = True
+    scored["disqualify_reasons"] = []
     return scored
+
+
+def preference_disqualify_reasons(listing):
+    """Return hard preference mismatches that should not be sent to the user."""
+    reasons = []
+
+    area = listing.get("area", "").lower()
+    if "prati" not in area:
+        reasons.append("fuori zona Prati")
+
+    rooms = listing.get("rooms") or 0
+    if rooms != REQUIRED_ROOMS:
+        reasons.append("non è trilocale")
+
+    size = listing.get("size_sqm") or 0
+    if size < MIN_SIZE_SQM:
+        reasons.append("meno di 70 mq")
+
+    floor_level = listing.get("floor_level")
+    floor_label = str(listing.get("floor_label", "")).lower()
+    if floor_level == 0 or "piano terra" in floor_label:
+        reasons.append("piano terra")
+    elif floor_level in {1, 2} and not has_brightness_signal(listing):
+        reasons.append("piano basso da verificare con foto")
+
+    return reasons
+
+
+def has_brightness_signal(listing):
+    text = " ".join(
+        str(listing.get(key, ""))
+        for key in ["title", "area", "description_text"]
+    ).lower()
+    return any(signal in text for signal in BRIGHTNESS_SIGNALS)
 
 
 def score_listings(listings):

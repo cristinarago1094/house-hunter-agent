@@ -98,6 +98,50 @@ https://www.immobiliare.it/annunci/555555/
 
         self.assertEqual(listing["size_sqm"], 72)
 
+    def test_parses_ground_floor(self):
+        email = {
+            "id": "gmail-floor-ground",
+            "source": "casa.it",
+            "subject": "Nuovo annuncio Prati",
+            "received_at": "2026-06-18T09:00:00",
+            "body": """
+Trilocale in Via Germanico
+Roma Prati
+€ 470.000
+80 mq
+3 locali
+piano terra
+https://www.casa.it/immobili/111111/
+""",
+        }
+
+        listing = parse_listing_email(email)
+
+        self.assertEqual(listing["floor_level"], 0)
+        self.assertEqual(listing["floor_label"], "piano terra")
+
+    def test_parses_numbered_floor(self):
+        email = {
+            "id": "gmail-floor-second",
+            "source": "immobiliare.it",
+            "subject": "Nuovo annuncio Prati",
+            "received_at": "2026-06-18T09:00:00",
+            "body": """
+Trilocale luminoso in Via Ottaviano
+Roma Prati
+€ 520.000
+82 mq
+3 locali
+2° piano
+https://www.immobiliare.it/annunci/222222/
+""",
+        }
+
+        listing = parse_listing_email(email)
+
+        self.assertEqual(listing["floor_level"], 2)
+        self.assertEqual(listing["floor_label"], "2° piano")
+
     def test_does_not_use_greeting_as_title(self):
         email = {
             "id": "gmail-casa-greeting",

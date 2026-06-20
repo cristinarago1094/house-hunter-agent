@@ -12,6 +12,20 @@ SIZE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 ROOMS_PATTERN = re.compile(r"([0-9]+)\s*(locali|locale|stanze|stanza)", re.IGNORECASE)
+FLOOR_NUMBER_PATTERN = re.compile(
+    r"\b([1-9][0-9]?)\s*(?:°|º|o)?\s*piano\b|\bpiano\s+([1-9][0-9]?)\b",
+    re.IGNORECASE,
+)
+FLOOR_WORDS = {
+    "primo": 1,
+    "secondo": 2,
+    "terzo": 3,
+    "quarto": 4,
+    "quinto": 5,
+    "sesto": 6,
+    "settimo": 7,
+    "ottavo": 8,
+}
 
 
 def parse_listing_email(email):
@@ -27,6 +41,7 @@ def parse_listing_email(email):
 
     title = _find_title(lines, email.get("subject", "Annuncio immobiliare"))
     area = _find_area(lines)
+    floor_level, floor_label = _find_floor(text)
 
     return {
         "source": email["source"],
@@ -37,7 +52,10 @@ def parse_listing_email(email):
         "price_eur": price,
         "size_sqm": size,
         "rooms": rooms,
+        "floor_level": floor_level,
+        "floor_label": floor_label,
         "url": url,
+        "description_text": text,
         "first_seen_at": email.get("received_at"),
         "last_seen_at": email.get("received_at"),
     }
@@ -72,6 +90,23 @@ def _find_title(lines, fallback):
             continue
         return line
     return fallback
+
+
+def _find_floor(text):
+    lower = text.lower()
+    if re.search(r"\bpiano\s+terra\b|\bp\.?\s*terra\b|\bpianterreno\b", lower):
+        return 0, "piano terra"
+
+    for word, level in FLOOR_WORDS.items():
+        if re.search(rf"\b{word}\s+piano\b|\bpiano\s+{word}\b", lower):
+            return level, f"{word} piano"
+
+    match = FLOOR_NUMBER_PATTERN.search(text)
+    if match:
+        value = match.group(1) or match.group(2)
+        return int(value), match.group(0)
+
+    return None, ""
 
 
 def _is_boilerplate_line(line):

@@ -6,17 +6,97 @@ from services.scorer import score_listing
 class ScorerTest(unittest.TestCase):
     def test_scores_strong_prati_purchase_match(self):
         listing = {
-            "title": "Bilocale in Via Germanico",
+            "title": "Trilocale in Via Germanico",
             "area": "Roma Prati",
             "price_eur": 420000,
-            "size_sqm": 72,
-            "rooms": 2,
+            "size_sqm": 78,
+            "rooms": 3,
+            "floor_level": 4,
         }
 
         scored = score_listing(listing)
 
         self.assertGreaterEqual(scored["score"], 80)
+        self.assertTrue(scored["matches_preferences"])
         self.assertIn("Roma Prati", scored["score_reasons"])
+
+    def test_rejects_non_trilocale(self):
+        scored = score_listing(
+            {
+                "title": "Quadrilocale in Via Cunfida",
+                "area": "Roma Prati",
+                "price_eur": 450000,
+                "size_sqm": 145,
+                "rooms": 4,
+                "floor_level": 4,
+            }
+        )
+
+        self.assertFalse(scored["matches_preferences"])
+        self.assertIn("non è trilocale", scored["disqualify_reasons"])
+
+    def test_rejects_small_listing(self):
+        scored = score_listing(
+            {
+                "title": "Trilocale piccolo",
+                "area": "Roma Prati",
+                "price_eur": 430000,
+                "size_sqm": 65,
+                "rooms": 3,
+                "floor_level": 4,
+            }
+        )
+
+        self.assertFalse(scored["matches_preferences"])
+        self.assertIn("meno di 70 mq", scored["disqualify_reasons"])
+
+    def test_rejects_ground_floor(self):
+        scored = score_listing(
+            {
+                "title": "Trilocale piano terra",
+                "area": "Roma Prati",
+                "price_eur": 430000,
+                "size_sqm": 80,
+                "rooms": 3,
+                "floor_level": 0,
+                "floor_label": "piano terra",
+            }
+        )
+
+        self.assertFalse(scored["matches_preferences"])
+        self.assertIn("piano terra", scored["disqualify_reasons"])
+
+    def test_rejects_low_floor_without_brightness_signal(self):
+        scored = score_listing(
+            {
+                "title": "Trilocale al primo piano",
+                "area": "Roma Prati",
+                "price_eur": 430000,
+                "size_sqm": 80,
+                "rooms": 3,
+                "floor_level": 1,
+                "description_text": "Trilocale in buono stato al primo piano",
+            }
+        )
+
+        self.assertFalse(scored["matches_preferences"])
+        self.assertIn("piano basso da verificare con foto", scored["disqualify_reasons"])
+
+    def test_accepts_low_floor_with_brightness_signal(self):
+        scored = score_listing(
+            {
+                "title": "Trilocale luminoso al secondo piano",
+                "area": "Roma Prati",
+                "price_eur": 430000,
+                "size_sqm": 80,
+                "rooms": 3,
+                "floor_level": 2,
+                "description_text": "Trilocale molto luminoso con doppia esposizione",
+            }
+        )
+
+        self.assertTrue(scored["matches_preferences"])
+        self.assertIn("piano basso ma luminosità indicata", scored["score_reasons"])
 
 
 if __name__ == "__main__":
