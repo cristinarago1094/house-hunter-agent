@@ -127,11 +127,20 @@ META_WHATSAPP_ACCESS_TOKEN=...
 META_WHATSAPP_API_VERSION=v23.0
 META_WHATSAPP_DAILY_TEMPLATE_NAME=daily_house_hunter_update
 META_WHATSAPP_DAILY_TEMPLATE_LANGUAGE=it
+META_WHATSAPP_DAILY_TEMPLATE_PARAM_COUNT=1
 WEBHOOK_VERIFY_TOKEN=scegli-una-frase-segreta
 DAILY_RUN_SECRET=scegli-una-seconda-frase-segreta
 GMAIL_TOKEN_JSON={...contenuto di credentials/token.json...}
 DATABASE_PATH=/var/data/house_hunter.db
 ```
+
+Se il template approvato non ha variabili, imposta:
+
+```text
+META_WHATSAPP_DAILY_TEMPLATE_PARAM_COUNT=0
+```
+
+In quel caso l'app invia prima il template fisso e subito dopo il riepilogo dettagliato come messaggio testuale.
 
 Su Render usa:
 

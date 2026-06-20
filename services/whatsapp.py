@@ -10,6 +10,7 @@ from config import (
     META_WHATSAPP_API_VERSION,
     META_WHATSAPP_DAILY_TEMPLATE_LANGUAGE,
     META_WHATSAPP_DAILY_TEMPLATE_NAME,
+    META_WHATSAPP_DAILY_TEMPLATE_PARAM_COUNT,
     META_WHATSAPP_PHONE_NUMBER_ID,
     WHATSAPP_ENABLED,
     WHATSAPP_TO_NUMBER,
@@ -68,6 +69,23 @@ def send_whatsapp_message_to(to_number, message):
 
 def send_daily_house_hunter_template(message):
     """Send the approved daily House Hunter template."""
+    if META_WHATSAPP_DAILY_TEMPLATE_PARAM_COUNT == 0:
+        template_result = _send_meta_template_message(
+            template_name=META_WHATSAPP_DAILY_TEMPLATE_NAME,
+            language_code=META_WHATSAPP_DAILY_TEMPLATE_LANGUAGE,
+            body_parameters=[],
+        )
+        if not template_result["sent"]:
+            return template_result
+
+        detail_result = _send_meta_text_message(message)
+        return {
+            "sent": detail_result["sent"],
+            "template_result": template_result,
+            "detail_result": detail_result,
+            **({"reason": detail_result["reason"]} if not detail_result["sent"] else {}),
+        }
+
     return _send_meta_template_message(
         template_name=META_WHATSAPP_DAILY_TEMPLATE_NAME,
         language_code=META_WHATSAPP_DAILY_TEMPLATE_LANGUAGE,
