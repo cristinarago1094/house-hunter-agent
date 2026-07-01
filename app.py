@@ -29,6 +29,118 @@ def daily_run():
     message, send_result = run_daily_import(use_sample_data=False)
     return jsonify({"message": message, "send_result": send_result})
 
+@app.route("/")
+def home():
+    return """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>House Hunter Agent</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f7f4ef;
+      color: #1f2933;
+      margin: 0;
+      padding: 40px;
+    }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #e2ded4;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+    }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 18px;
+      color: #52606d;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .card {
+      border: 1px solid #e2ded4;
+      border-radius: 12px;
+      padding: 16px;
+      background: #faf9f6;
+    }
+    .card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+    a.button {
+      display: inline-block;
+      margin-top: 28px;
+      padding: 12px 18px;
+      border-radius: 10px;
+      background: #1f2933;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer {
+      margin-top: 26px;
+      color: #7b8794;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🏠 House Hunter Agent</h1>
+    <p class="subtitle">
+      AI-powered real estate monitoring agent that tracks property alerts,
+      detects relevant opportunities, stores historical data and prepares
+      WhatsApp summaries for the Rome property market.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <strong>Gmail integration</strong>
+        Reads real estate alerts automatically.
+      </div>
+      <div class="card">
+        <strong>Property tracking</strong>
+        Detects new listings, duplicates and price changes.
+      </div>
+      <div class="card">
+        <strong>SQLite database</strong>
+        Stores listings and historical changes.
+      </div>
+      <div class="card">
+        <strong>WhatsApp workflow</strong>
+        Sends relevant daily updates when changes are found.
+      </div>
+      <div class="card">
+        <strong>GitHub Actions</strong>
+        Runs the daily workflow automatically.
+      </div>
+      <div class="card">
+        <strong>Render deployment</strong>
+        Hosted as a lightweight Flask application.
+      </div>
+    </div>
+
+    <a class="button" href="/favorites">View saved listings</a>
+
+    <p class="footer">
+      Available endpoints: /health · /favorites · /daily-run · /webhook
+    </p>
+  </main>
+</body>
+</html>
+"""
 
 @app.get("/favorites")
 def favorites_page():
